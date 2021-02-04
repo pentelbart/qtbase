@@ -67,6 +67,10 @@
 #include "qxcbvulkanwindow.h"
 #endif
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#include <cheri/cheric.h>
+#endif
+
 QT_BEGIN_NAMESPACE
 
 // return QXcbNativeInterface::ResourceType for the key.
@@ -216,13 +220,21 @@ void *QXcbNativeInterface::nativeResourceForScreen(const QByteArray &resourceStr
         result = appUserTime(xcbScreen);
         break;
     case ScreenHintStyle:
-        result = reinterpret_cast<void *>(xcbScreen->hintStyle() + 1);
+        result = reinterpret_cast<void *>(static_cast<intptr_t>(xcbScreen->hintStyle() + 1));
         break;
     case ScreenSubpixelType:
+#ifdef __CHERI_PURE_CAPABILITY__
+        result = cheri_fromint(xcbScreen->subpixelType() + 1);
+#else
         result = reinterpret_cast<void *>(xcbScreen->subpixelType() + 1);
+#endif
         break;
     case ScreenAntialiasingEnabled:
+#ifdef __CHERI_PURE_CAPABILITY__
+        result = cheri_fromint(xcbScreen->antialiasingEnabled() + 1);
+#else
         result = reinterpret_cast<void *>(xcbScreen->antialiasingEnabled() + 1);
+#endif
         break;
     case TrayWindow:
         if (QXcbSystemTrayTracker *s = systemTrayTracker(screen))
@@ -232,7 +244,11 @@ void *QXcbNativeInterface::nativeResourceForScreen(const QByteArray &resourceStr
         result = getTimestamp(xcbScreen);
         break;
     case RootWindow:
+#ifdef __CHERI_PURE_CAPABILITY__
+        result = cheri_fromint(xcbScreen->root());
+#else
         result = reinterpret_cast<void *>(xcbScreen->root());
+#endif
         break;
     case CompositingEnabled:
         if (QXcbVirtualDesktop *vd = xcbScreen->virtualDesktop())
@@ -430,8 +446,12 @@ void *QXcbNativeInterface::x11Screen()
 {
     QXcbIntegration *integration = QXcbIntegration::instance();
     QXcbConnection *defaultConnection = integration->defaultConnection();
-    if (defaultConnection)
-        return reinterpret_cast<void *>(defaultConnection->primaryScreenNumber());
+    if (defaultConnection) 
+#ifdef __CHERI_PURE_CAPABILITY__
+        return cheri_fromint(defaultConnection->primaryScreenNumber());
+#else
+        return static_cast<std::intptr_t>(defaultConnection->primaryScreenNumber());
+#endif
     return 0;
 }
 
@@ -440,7 +460,11 @@ void *QXcbNativeInterface::rootWindow()
     QXcbIntegration *integration = QXcbIntegration::instance();
     QXcbConnection *defaultConnection = integration->defaultConnection();
     if (defaultConnection)
+#ifdef __CHERI_PURE_CAPABILITY__
+        return cheri_fromint(defaultConnection->rootWindow());
+#else
         return reinterpret_cast<void *>(defaultConnection->rootWindow());
+#endif
     return 0;
 }
 
